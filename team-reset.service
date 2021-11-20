@@ -2,8 +2,8 @@
 Description=Team Reset Bot
 
 [Service]
-ExecStart=/usr/bin/python3 /home/ta/discord-team-reset/app.py
-WorkingDirectory=/home/ta/discord-team-reset
+ExecStart=/usr/bin/python3 /home/ta/discord-team-reset-bot/app.py
+WorkingDirectory=/home/ta/discord-team-reset-bot
 Restart=on-failure
 RestartSec=60
 

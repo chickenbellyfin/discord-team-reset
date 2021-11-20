@@ -2,28 +2,40 @@ import logging
 import re
 import yaml
 import time
+import sys
 
 import discord
-from discord import VoiceChannel
+from discord import VoiceChannel, Message
+
 
 logging.basicConfig(
-  format='%(asctime)s :: %(levelname)s :: %(message)s',
-  filename='app.log', filemode='a', level=logging.DEBUG)
-logging.getLogger('discord').setLevel(logging.INFO)
-logging.getLogger('asyncio').setLevel(logging.INFO)
+  level=logging.DEBUG,
+  format='%(asctime)s :: %(levelname)s :: %(name)s :: %(message)s',
+  handlers=[
+    logging.FileHandler("team-reset.log"),
+    logging.StreamHandler()
+  ]
+)
+logging.getLogger('discord').setLevel(logging.ERROR)
+logging.getLogger('asyncio').setLevel(logging.ERROR)
 
-with open('config.yaml') as config_file:
+config_path = 'config.yaml'
+if len(sys.argv) > 1:
+  config_path = sys.argv[1]
+
+logging.info(f'Reading config from {config_path}')
+with open(config_path) as config_file:
   config = yaml.safe_load(config_file)
 
 discord_bot_token = config['discord_bot_token']
 discord_bot_channel_id = int(config['bot_channel_id'])
+discord_bot_triggers = config['bot_triggers']
 from_channels = config['from_channels']
 to_channel_id = int(config['to_channel_id'])
 
 intents = discord.Intents.default()
 intents.members = True
 discord_client = discord.Client(guild_subscriptions=True, intents=intents)
-
 
 def is_team_channel(channel):
   if type(channel) != VoiceChannel:
@@ -61,16 +73,25 @@ async def do_reset_teams():
 async def on_ready():
   logging.info(f'Connected to discord as {discord_client.user}')
 
-
 @discord_client.event
-async def on_message(message):
-  bot_mentioned = False
-  for member in message.mentions:
-    if member.id == discord_client.user.id:
-      bot_mentioned = True
+async def on_message(message: Message):
+  triggered = False
+  should_wait = False
+  for idx, trigger in enumerate(discord_bot_triggers):
+    if message.clean_content.startswith(trigger):
+      logging.info(f'Triggered by "{trigger}" in "{message.clean_content}" from @{message.author.display_name}')
+      triggered = True
+      # second trigger onwards will be delayed
+      if idx > 0:
+        should_wait = True
+      break
   
-  if bot_mentioned and message.channel.id == discord_bot_channel_id:
-    logging.info(f"Bot mentioned: '{message.content}'")
+  if not triggered:
+    return
+  
+  if triggered and message.channel.id == discord_bot_channel_id:
+    if should_wait:
+      time.sleep(3) # wait one second, in case other bots move first
     moved = await do_reset_teams()
 
     if moved > 0:

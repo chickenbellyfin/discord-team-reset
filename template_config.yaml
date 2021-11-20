@@ -4,8 +4,13 @@ discord_bot_token: '...'
 # channel id where the bot will listen for commands
 bot_channel_id: 000
 
-# list of regex to match team channels to move from
+# list of 1 or more commands the bot will trigger on
+# The first command will respond instantly but the latter ones will incur a 
+# short delay since it is mainly for hijacking another bot's command
+bot_triggers: ['@bot-name', '/botcommand']
+
+# list of regex to match voice channels to move from
 from_channels: ['[Bb]lood [Ee]agle', '[Dd]iamond [Ss]word', '[Bb][Ee]', '[Dd][Ss]']
 
-# channel that users will be moved to
+# voice channel that users will be moved to
 to_channel_id: 000
