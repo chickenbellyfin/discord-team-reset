@@ -3,26 +3,28 @@ import re
 import yaml
 import time
 import sys
+import os
 
 import discord
 from discord import VoiceChannel, Message
 
+data_dir = ''
+if len(sys.argv) > 1:
+  data_dir = sys.argv[1]
+  print(f'Using data dir {data_dir}')
 
 logging.basicConfig(
   level=logging.DEBUG,
   format='%(asctime)s :: %(levelname)s :: %(name)s :: %(message)s',
   handlers=[
-    logging.FileHandler("team-reset.log"),
+    logging.FileHandler(os.path.join(data_dir, "team-reset.log")),
     logging.StreamHandler()
   ]
 )
 logging.getLogger('discord').setLevel(logging.ERROR)
 logging.getLogger('asyncio').setLevel(logging.ERROR)
 
-config_path = 'config.yaml'
-if len(sys.argv) > 1:
-  config_path = sys.argv[1]
-
+config_path = os.path.join(data_dir, 'config.yaml')
 logging.info(f'Reading config from {config_path}')
 with open(config_path) as config_file:
   config = yaml.safe_load(config_file)
@@ -76,22 +78,16 @@ async def on_ready():
 @discord_client.event
 async def on_message(message: Message):
   triggered = False
-  should_wait = False
   for idx, trigger in enumerate(discord_bot_triggers):
     if message.clean_content.startswith(trigger):
       logging.info(f'Triggered by "{trigger}" in "{message.clean_content}" from @{message.author.display_name}')
       triggered = True
-      # second trigger onwards will be delayed
-      if idx > 0:
-        should_wait = True
       break
   
   if not triggered:
     return
   
   if triggered and message.channel.id == discord_bot_channel_id:
-    if should_wait:
-      time.sleep(3) # wait one second, in case other bots move first
     moved = await do_reset_teams()
 
     if moved > 0:
