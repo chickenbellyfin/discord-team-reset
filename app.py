@@ -1,12 +1,11 @@
 import logging
-import re
-import yaml
-import time
-import sys
 import os
+import re
+import sys
 
 import discord
-from discord import VoiceChannel, Message
+import yaml
+from discord import Message, VoiceChannel
 
 data_dir = ''
 if len(sys.argv) > 1:
@@ -53,13 +52,13 @@ def is_team_channel(channel):
   return False
 
 
-async def do_reset_teams():    
+async def do_reset_teams():
   channels = discord_client.get_all_channels()
   members_to_move = set()
   for channel in channels:
     if is_team_channel(channel):
       members_to_move.update(set(channel.members))
-    
+
   to_channel = discord_client.get_channel(to_channel_id)
 
   for member in members_to_move:
@@ -68,7 +67,7 @@ async def do_reset_teams():
       await member.move_to(to_channel)
     except Exception as e:
       logging.error(e)
-  return len(members_to_move)    
+  return len(members_to_move)
 
 
 @discord_client.event
@@ -83,10 +82,10 @@ async def on_message(message: Message):
       logging.info(f'Triggered by "{trigger}" in "{message.clean_content}" from @{message.author.display_name}')
       triggered = True
       break
-  
+
   if not triggered:
     return
-  
+
   if triggered and message.channel.id == discord_bot_channel_id:
     moved = await do_reset_teams()
 
@@ -94,6 +93,6 @@ async def on_message(message: Message):
       await message.add_reaction('✅')
     else:
       await message.add_reaction('🤔')
-    
+
 
 discord_client.run(discord_bot_token)
